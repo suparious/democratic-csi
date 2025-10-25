@@ -162,9 +162,31 @@ class Api {
 
   async getIsScale() {
     const systemVersion = await this.getSystemVersion();
+    let version;
 
-    if (systemVersion.v2 && systemVersion.v2.toLowerCase().includes("scale")) {
+    if (systemVersion.v2) {
+      version = systemVersion.v2.toLowerCase();
+    } else if (systemVersion.v1) {
+      version = systemVersion.v1.fullversion.toLowerCase();
+    } else {
+      return false;
+    }
+
+    // Check for explicit "scale" keyword (old format: TrueNAS-SCALE-20.11...)
+    if (version.includes("scale")) {
       return true;
+    }
+
+    // Check for TrueNAS with version >= 20 (new format: TrueNAS-25.04.2.5)
+    // TrueNAS CORE ended at version 13.x, so anything TrueNAS 20+ is SCALE
+    if (version.includes("truenas")) {
+      const parts = version.split("-");
+      for (const part of parts) {
+        const num = parseInt(part);
+        if (!isNaN(num) && num >= 20) {
+          return true;
+        }
+      }
     }
 
     return false;
